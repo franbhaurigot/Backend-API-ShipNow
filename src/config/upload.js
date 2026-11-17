@@ -2,7 +2,11 @@ import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+const allowedTypes = new Map([
+  ['application/pdf', ['.pdf']],
+  ['image/png', ['.png']],
+  ['image/jpeg', ['.jpg', '.jpeg']]
+]);
 const maxFileSize = 5 * 1024 * 1024;
 
 export function createUpload(destination) {
@@ -19,7 +23,9 @@ export function createUpload(destination) {
     storage,
     limits: { fileSize: maxFileSize },
     fileFilter: (_req, file, cb) => {
-      if (!allowedMimeTypes.includes(file.mimetype)) return cb(new Error('Tipo de archivo no permitido. Solo PDF, PNG y JPG.'));
+      const extensions = allowedTypes.get(file.mimetype);
+      const extension = path.extname(file.originalname).toLowerCase();
+      if (!extensions || !extensions.includes(extension)) return cb(new Error('Tipo de archivo no permitido. Solo PDF, PNG y JPG con extensión coincidente.'));
       cb(null, true);
     }
   });

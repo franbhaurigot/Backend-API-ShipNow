@@ -27,6 +27,29 @@ describe('ShipNow API - pruebas funcionales', function () {
     expect(res.body.data).to.have.length(1);
   });
 
+  it('GET /api/users pagina resultados y devuelve metadatos', async () => {
+    await User.create({ name: 'Segundo', email: 'segundo@test.com', password: 'Test1234!' });
+    const res = await request(app).get('/api/users?page=1&limit=1');
+    expect(res.status).to.equal(200);
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.pagination).to.include({ page: 1, limit: 1, totalItems: 2, totalPages: 2, hasNextPage: true, hasPrevPage: false });
+  });
+
+  it('GET /api/orders rechaza un límite fuera de rango', async () => {
+    const res = await request(app).get('/api/orders?limit=500');
+    expect(res.status).to.equal(400);
+    expect(res.body.error.code).to.equal('INVALID_PAGINATION');
+  });
+
+  it('GET /health informa entorno y uptime sin datos sensibles', async () => {
+    const res = await request(app).get('/health');
+    expect(res.status).to.equal(200);
+    expect(res.body).to.include({ success: true, status: 'ok', service: 'ShipNow API', environment: 'test' });
+    expect(res.body).to.have.property('uptime');
+    expect(res.body).to.have.property('timestamp');
+    expect(res.body).not.to.have.property('mongoUri');
+  });
+
   it('POST /api/users valida campos obligatorios', async () => {
     const res = await request(app).post('/api/users').send({ name: 'Incompleto' });
     expect(res.status).to.equal(400);

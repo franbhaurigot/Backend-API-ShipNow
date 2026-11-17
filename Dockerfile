@@ -1,6 +1,7 @@
 FROM node:20-alpine
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    UPLOAD_DIR=/app/uploads
 WORKDIR /app
 
 COPY package*.json ./

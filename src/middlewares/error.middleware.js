@@ -6,7 +6,7 @@ export function errorMiddleware(err, req, res, next) {
   if (res.headersSent) return next(err);
 
   let error = err;
-  if (err.message === 'Tipo de archivo no permitido. Solo PDF, PNG y JPG.') {
+  if (err.message?.startsWith('Tipo de archivo no permitido.')) {
     error = new HttpError(400, 'INVALID_FILE_TYPE', err.message);
   }
 

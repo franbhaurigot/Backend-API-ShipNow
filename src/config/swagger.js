@@ -54,9 +54,9 @@ const options = {
         Success: { type: 'object', properties: { success: { type: 'boolean', example: true }, data: {} } },
         Error: { type: 'object', properties: { success: { type: 'boolean', example: false }, error: { type: 'object', properties: { code: { type: 'string' }, message: { type: 'string' } } } } },
         User: { type: 'object', required: ['name', 'email', 'password'], properties: { name: { type: 'string' }, email: { type: 'string', format: 'email' }, password: { type: 'string' }, role: { type: 'string', enum: ['ADMIN', 'USER', 'COURIER'] } } },
-        Product: { type: 'object', required: ['name', 'price', 'stock'], properties: { name: { type: 'string' }, price: { type: 'number' }, stock: { type: 'integer' }, status: { type: 'string', enum: ['AVAILABLE', 'OUT_OF_STOCK'] } },
-        Order: { type: 'object', required: ['user', 'items', 'destination'], properties: { user: { type: 'string' }, items: { type: 'array', items: { type: 'object', properties: { product: { type: 'string' }, quantity: { type: 'integer' } } } }, destination: { type: 'string' }, priority: { type: 'string', enum: ['LOW', 'NORMAL', 'HIGH'] } },
-        Delivery: { type: 'object', required: ['order'], properties: { order: { type: 'string' }, courier: { type: 'string' }, status: { type: 'string' } }
+        Product: { type: 'object', required: ['name', 'price', 'stock'], properties: { name: { type: 'string' }, price: { type: 'number' }, stock: { type: 'integer' }, status: { type: 'string', enum: ['AVAILABLE', 'OUT_OF_STOCK'] } } },
+        Order: { type: 'object', required: ['user', 'items', 'destination'], properties: { user: { type: 'string' }, items: { type: 'array', items: { type: 'object', properties: { product: { type: 'string' }, quantity: { type: 'integer' } } } }, destination: { type: 'string' }, priority: { type: 'string', enum: ['LOW', 'NORMAL', 'HIGH'] } } },
+        Delivery: { type: 'object', required: ['order'], properties: { order: { type: 'string' }, courier: { type: 'string' }, status: { type: 'string' } } }
       }
     }
   },

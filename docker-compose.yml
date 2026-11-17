@@ -20,6 +20,7 @@ services:
       NODE_ENV: production
       LOG_LEVEL: info
       MONGODB_URI: mongodb://mongo:27017/shipnow
+      UPLOAD_DIR: /app/uploads
       ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
     ports:
       - "${PORT:-3000}:3000"

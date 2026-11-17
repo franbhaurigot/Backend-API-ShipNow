@@ -44,20 +44,34 @@ La aplicación revisa las variables necesarias al arrancar. Si falta alguna o ti
 
 No hay variables de JWT ni de servicios externos porque esta versión todavía no implementa autenticación ni integra servicios de terceros.
 
-## Paginación
+## Listados, filtros y paginación
 
-Los listados de usuarios, pedidos y entregas aceptan:
+Los listados aceptan filtros por query string. Los filtros se pueden combinar entre sí y con la paginación.
+
+| Recurso | Filtros disponibles |
+|---|---|
+| Usuarios | `role`, `name`, `email` |
+| Productos | `name`, `status`, `availableOnly=true` |
+| Pedidos | `status`, `priority`, `user` |
+| Entregas | `status`, `courier`, `order` |
+
+Los filtros de texto por nombre y email buscan coincidencias parciales sin distinguir mayúsculas. Los filtros de estado, rol y prioridad aceptan los valores definidos por la API; un valor inválido devuelve HTTP 400.
+
+Los listados de usuarios, pedidos y entregas también aceptan:
 
 - `page`: página a consultar (empieza en 1).
 - `limit`: cantidad de resultados (por defecto 10, máximo 100).
 
-Ejemplo:
+Ejemplos:
 
 ```http
-GET /api/orders?page=2&limit=20
+GET /api/users?role=COURIER&name=norte&page=1&limit=10
+GET /api/products?name=cable&availableOnly=true
+GET /api/orders?status=CONFIRMED&priority=HIGH&page=1&limit=20
+GET /api/deliveries?status=DELIVERED
 ```
 
-La respuesta incluye los resultados y un objeto `pagination` con el total de registros y las páginas disponibles. Si los valores no son válidos, la API responde con HTTP 400.
+Las respuestas de usuarios, pedidos y entregas incluyen un objeto `pagination` con el total de registros que coinciden con los filtros y las páginas disponibles. Si los valores de paginación no son válidos, la API responde con HTTP 400.
 
 ## Archivos
 

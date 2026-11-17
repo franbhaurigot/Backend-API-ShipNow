@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 import Delivery from '../models/Delivery.model.js';
 
 class DeliveryRepository {
-  findAll({ skip, limit }) { return Delivery.find().populate('order').populate('courier', 'name email role').sort({ createdAt: -1 }).skip(skip).limit(limit); }
-  countAll() { return Delivery.countDocuments(); }
+  findAll({ skip, limit, filters = {} }) { return Delivery.find(filters).populate('order').populate('courier', 'name email role').sort({ createdAt: -1 }).skip(skip).limit(limit); }
+  countAll(filters = {}) { return Delivery.countDocuments(filters); }
   findById(id) { return Delivery.findById(id).populate('order').populate('courier', 'name email role'); }
   findOrderById(id) { return mongoose.model('Order').findById(id); }
   findCourierById(id) { return mongoose.model('User').findById(id); }

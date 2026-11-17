@@ -5,7 +5,9 @@ import app from '../src/app.js';
 import { connectTestDatabase, cleanDatabase, disconnectTestDatabase } from './helpers.js';
 import User from '../src/models/User.model.js';
 import Product from '../src/models/Product.model.js';
-import { ROLES } from '../src/constants/index.js';
+import Order from '../src/models/Order.model.js';
+import Delivery from '../src/models/Delivery.model.js';
+import { ROLES, ORDER_STATUS, DELIVERY_STATUS } from '../src/constants/index.js';
 
 describe('ShipNow API - pruebas funcionales', function () {
   this.timeout(30000);
@@ -35,6 +37,15 @@ describe('ShipNow API - pruebas funcionales', function () {
     expect(res.body.pagination).to.include({ page: 1, limit: 1, totalItems: 2, totalPages: 2, hasNextPage: true, hasPrevPage: false });
   });
 
+  it('GET /api/users filtra por rol y nombre', async () => {
+    await User.create({ name: 'Repartidor Norte', email: 'repartidor@test.com', password: 'Test1234!', role: ROLES.COURIER });
+    const res = await request(app).get('/api/users?role=COURIER&name=norte');
+    expect(res.status).to.equal(200);
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.data[0].email).to.equal('repartidor@test.com');
+    expect(res.body.pagination.totalItems).to.equal(1);
+  });
+
   it('GET /api/orders rechaza un límite fuera de rango', async () => {
     const res = await request(app).get('/api/orders?limit=500');
     expect(res.status).to.equal(400);
@@ -62,6 +73,14 @@ describe('ShipNow API - pruebas funcionales', function () {
     expect(res.body.data[0].name).to.equal('Producto Test');
   });
 
+  it('GET /api/products filtra por nombre y disponibilidad', async () => {
+    await Product.create({ name: 'Producto Agotado', price: 500, stock: 0 });
+    const res = await request(app).get('/api/products?name=test&availableOnly=true');
+    expect(res.status).to.equal(200);
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.data[0].name).to.equal('Producto Test');
+  });
+
   it('POST /api/products crea producto', async () => {
     const res = await request(app).post('/api/products').send({ name: 'Nuevo', price: 200, stock: 3 });
     expect(res.status).to.equal(201);
@@ -72,6 +91,16 @@ describe('ShipNow API - pruebas funcionales', function () {
     const res = await request(app).get('/api/orders');
     expect(res.status).to.equal(200);
     expect(res.body.data).to.be.an('array');
+  });
+
+  it('GET /api/orders filtra por estado y prioridad', async () => {
+    await Order.create({ code: 'SN-FILTER-1', user: user.id, items: [{ product: product.id, quantity: 1, unitPrice: 1200 }], total: 1200, destination: 'Destino', status: ORDER_STATUS.CONFIRMED, priority: 'HIGH' });
+    await Order.create({ code: 'SN-FILTER-2', user: user.id, items: [{ product: product.id, quantity: 1, unitPrice: 1200 }], total: 1200, destination: 'Destino', status: ORDER_STATUS.PENDING, priority: 'NORMAL' });
+    const res = await request(app).get('/api/orders?status=CONFIRMED&priority=HIGH');
+    expect(res.status).to.equal(200);
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.data[0].code).to.equal('SN-FILTER-1');
+    expect(res.body.pagination.totalItems).to.equal(1);
   });
 
   it('POST /api/orders crea pedido y calcula total', async () => {
@@ -98,6 +127,15 @@ describe('ShipNow API - pruebas funcionales', function () {
     expect(res.body.error.code).to.equal('INVALID_ORDER_STATUS');
   });
 
+  it('GET /api/deliveries filtra por estado', async () => {
+    const order = await Order.create({ code: 'SN-DELIVERY-FILTER', user: user.id, items: [{ product: product.id, quantity: 1, unitPrice: 1200 }], total: 1200, destination: 'Destino' });
+    await Delivery.create({ order: order.id, status: DELIVERY_STATUS.DELIVERED });
+    const res = await request(app).get('/api/deliveries?status=DELIVERED');
+    expect(res.status).to.equal(200);
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.pagination.totalItems).to.equal(1);
+  });
+
   it('GET /api/mocks/users devuelve datos sin persistir', async () => {
     const res = await request(app).get('/api/mocks/users?qty=2');
     expect(res.status).to.equal(200);
@@ -115,7 +153,7 @@ describe('ShipNow API - pruebas funcionales', function () {
     const res = await request(app).post('/api/mocks/seed').send({ qty: 2 });
     expect(res.status).to.equal(201);
     expect(res.body.data.colecciones.pedidos).to.equal(2);
-    expect(await User.countDocuments()).to.equal(5); // usuario base + 2 usuarios + 2 repartidores
+    expect(await User.countDocuments()).to.equal(5);
   });
 
   it('GET /api/logger/test ejecuta el endpoint de diagnóstico', async () => {

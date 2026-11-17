@@ -1,8 +1,10 @@
 import User from '../models/User.model.js';
 
 class UserRepository {
-  findAll({ skip, limit }) { return User.find().select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit); }
-  countAll() { return User.countDocuments(); }
+  findAll({ skip, limit, filters = {} }) {
+    return User.find(filters).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit);
+  }
+  countAll(filters = {}) { return User.countDocuments(filters); }
   findById(id) { return User.findById(id).select('-password'); }
   findByIdForRelation(id) { return User.findById(id); }
   findByEmail(email) { return User.findOne({ email: email.toLowerCase() }); }

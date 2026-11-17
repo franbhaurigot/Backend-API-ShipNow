@@ -7,7 +7,21 @@ import logger from '../config/logger.js';
 import { getPagination, buildPagination } from '../utils/pagination.js';
 
 class OrderService {
-  async getAll(query) { const { page, limit, skip } = getPagination(query); const [data, total] = await Promise.all([repo.findAll({ skip, limit }), repo.countAll()]); return { data, pagination: buildPagination(page, limit, total) }; }
+  async getAll(query) {
+    const { page, limit, skip } = getPagination(query);
+    const filters = {};
+    if (query.status) {
+      if (!Object.values(ORDER_STATUS).includes(query.status)) throw new HttpError(400, 'INVALID_ORDER_FILTER', 'status no es válido.');
+      filters.status = query.status;
+    }
+    if (query.priority) {
+      if (!Object.values(ORDER_PRIORITY).includes(query.priority)) throw new HttpError(400, 'INVALID_ORDER_FILTER', 'priority no es válida.');
+      filters.priority = query.priority;
+    }
+    if (query.user) filters.user = query.user;
+    const [data, total] = await Promise.all([repo.findAll({ skip, limit, filters }), repo.countAll(filters)]);
+    return { data, pagination: buildPagination(page, limit, total) };
+  }
   async getById(id) { const order = await repo.findById(id); if (!order) throw new HttpError(404, 'ORDER_NOT_FOUND', 'Pedido no encontrado.'); return order; }
   async create(data) {
     if (!data.user || !Array.isArray(data.items) || !data.items.length || !data.destination) throw new HttpError(400, 'INVALID_ORDER', 'user, items (no vacío) y destination son obligatorios.');

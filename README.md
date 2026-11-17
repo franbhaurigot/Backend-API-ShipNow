@@ -1,129 +1,149 @@
-# ShipNow API — Proyecto integrador (Módulos 1 a 7)
+# ShipNow API — Proyecto integrador (Módulos 1 a 8)
 
-API REST de gestión logística desarrollada con Node.js, Express y MongoDB. Integra arquitectura por capas, mocking, manejo centralizado de errores, logging con Winston, documentación Swagger, testing funcional y carga de documentos/comprobantes.
+API REST de gestión logística desarrollada con Node.js 20+, Express y MongoDB. Incluye arquitectura por capas, validaciones, paginación, carga controlada de archivos, logging, Swagger, pruebas funcionales y despliegue con Docker.
 
 ## Requisitos
 
-- Node.js 20 o superior
-- npm
-- MongoDB local o una instancia MongoDB Atlas
+- Node.js 20 o superior y npm
+- MongoDB local/Atlas (para ejecución local)
+- Docker y Docker Compose (para contenedores)
 
-## Instalación y ejecución
+## Configuración local
 
 ```bash
 npm install
 cp .env.example .env
 ```
 
-Editar `.env` con los valores de tu entorno:
+Configurar las variables en `.env`:
 
-```env
-PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/shipnow
-NODE_ENV=development
-LOG_LEVEL=debug
-```
+| Variable | Uso | Ejemplo |
+|---|---|---|
+| PORT | Puerto HTTP | 3000 |
+| MONGODB_URI | Conexión MongoDB | mongodb://127.0.0.1:27017/shipnow |
+| NODE_ENV | Entorno (development, test, production) | development |
+| LOG_LEVEL | Nivel mínimo de consola | debug |
+| ENABLE_SWAGGER | Habilitar Swagger explícitamente en producción | false |
 
-Iniciar:
+No guardar secretos ni credenciales reales en `.env.example`. La aplicación valida las variables obligatorias y sus valores al iniciar. No utiliza JWT ni URLs de servicios externos porque este proyecto todavía no integra autenticación ni servicios de terceros.
+
+Iniciar en desarrollo:
 
 ```bash
 npm run dev
 ```
 
-La API queda disponible en `http://localhost:3000`. Health check: `GET /health`.
+O iniciar normalmente:
 
-## Arquitectura
-
-```text
-src/
-  config/         configuración de entorno, Winston, Swagger y Multer
-  constants/      roles, estados, prioridades y tipos de documentos
-  controllers/    entrada HTTP; reciben req/res y delegan
-  middlewares/    404 y manejo global de errores
-  models/         esquemas Mongoose
-  repositories/   acceso y consultas a MongoDB
-  routes/         asociación de paths con controllers
-  services/       reglas de negocio y validaciones
-  utils/          errores, códigos y asyncHandler
-  app.js          configuración Express exportable
-  server.js       conexión MongoDB y levantamiento del servidor
-tests/            pruebas funcionales
+```bash
+npm start
 ```
 
-Los controllers no acceden a Mongoose. Los services aplican reglas de negocio (validaciones, cálculo de totales y relaciones); los repositories encapsulan consultas, filtros, proyecciones y persistencia. `app.js` se puede importar sin abrir un puerto, lo que permite probar la API con Supertest.
+API: http://localhost:3000  
+Health check: http://localhost:3000/health  
+Swagger: http://localhost:3000/api/docs (habilitado automáticamente fuera de producción).
 
-## Endpoints principales
+## Paginación
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/users` | Listar usuarios |
-| POST | `/api/users` | Crear usuario |
-| GET | `/api/users/:id` | Consultar usuario |
-| POST | `/api/users/:id/documents` | Subir documento (`multipart/form-data`, campo `file`, campo `documentType`) |
-| GET | `/api/products` | Listar productos (`?availableOnly=true` filtra stock) |
-| POST | `/api/products` | Crear producto |
-| GET | `/api/products/:id` | Consultar producto |
-| GET | `/api/orders` | Listar pedidos |
-| POST | `/api/orders` | Crear pedido; calcula el total con los precios actuales |
-| GET | `/api/orders/:id` | Consultar pedido |
-| PATCH | `/api/orders/:id/status` | Actualizar estado (`status`) |
-| GET | `/api/deliveries` | Listar entregas |
-| POST | `/api/deliveries` | Crear entrega asociada a pedido y repartidor opcional |
-| GET | `/api/deliveries/:id` | Consultar entrega |
-| POST | `/api/deliveries/:id/proof` | Subir comprobante (`multipart/form-data`, campo `file`) |
-| GET | `/api/mocks/users?qty=2` | Generar usuarios simulados en memoria |
-| GET | `/api/mocks/orders?qty=2` | Generar pedidos de muestra sin persistir |
-| GET | `/api/mocks/deliveries?qty=2` | Generar entregas de muestra sin persistir |
-| POST | `/api/mocks/seed` | Insertar datos relacionados en MongoDB; body `{ "qty": 2 }` |
-| GET | `/api/logger/test` | Diagnóstico: emite todos los niveles de log |
-| GET | `/api/docs` | Swagger UI |
+Los listados de usuarios, pedidos y entregas están paginados. Parámetros:
+- `page`: página desde 1 (predeterminado: 1).
+- `limit`: elementos por página (predeterminado: 10; máximo: 100).
 
-Los endpoints de mocks aceptan `qty` entero entre 1 y 100. El seed genera usuarios, repartidores, productos, pedidos y entregas relacionados. `insertados` representa el total de documentos creados entre colecciones.
+Ejemplo: `GET /api/orders?page=2&limit=20`.
 
-## Manejo de errores
-
-Todas las respuestas de error usan el formato:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ORDER_NOT_FOUND",
-    "message": "Pedido no encontrado."
-  }
-}
-```
-
-Los errores se originan en la capa correspondiente y el middleware global normaliza la respuesta HTTP. Entre otros: `VALIDATION_ERROR`, `USER_NOT_FOUND`, `ORDER_NOT_FOUND`, `INVALID_ORDER_STATUS`, `INVALID_MOCK_QUANTITY`, `FILE_REQUIRED`, `INVALID_FILE_TYPE` e `INTERNAL_SERVER_ERROR`.
-
-## Logging
-
-Se utiliza Winston con niveles `debug`, `http`, `info`, `warning`, `error` y `fatal`. En desarrollo la consola muestra nivel debug; en producción muestra desde info. Se generan archivos diarios en `logs/`, con rotación por fecha, tamaño máximo y retención. `error-*.log` guarda errores y niveles más graves. La carpeta `logs/` está excluida de Git.
-
-Probar con `GET /api/logger/test`. El endpoint es una herramienta de diagnóstico y no una funcionalidad de negocio.
+La respuesta incluye `data` y `pagination` con página, límite, total, páginas y banderas de navegación. Valores inválidos devuelven HTTP 400.
 
 ## Carga de archivos
 
-Multer acepta PDF, PNG y JPG/JPEG con un máximo de 5 MB. Los documentos se guardan bajo `uploads/user-documents/` y los comprobantes bajo `uploads/delivery-proofs/`. MongoDB almacena únicamente metadatos (nombre original, nombre generado, ruta, MIME, tamaño y fecha). `uploads/` está excluida de Git.
+Multer acepta PDF, PNG y JPG/JPEG con máximo de 5 MB y extensión coherente con el MIME declarado. Los archivos se guardan en `uploads/`; MongoDB almacena metadatos. Los errores de tipo y tamaño se devuelven de forma controlada.
 
-Para documentos de usuario, enviar `POST /api/users/:id/documents` como `multipart/form-data` con:
-- `file`: archivo
-- `documentType`: `ID`, `ADDRESS_PROOF` u `OTHER`
+La carpeta de archivos no forma parte del repositorio. En Docker se monta en un volumen separado. Para un entorno real, definir retención y eliminación periódica de archivos, backups y/o migrar a almacenamiento de objetos (S3 u otro). El volumen no reemplaza una política de retención.
 
-Para comprobantes, enviar `POST /api/deliveries/:id/proof` con `file`.
+## Entornos y endpoints internos
+
+- `development`: Swagger, mocks y endpoint de diagnóstico del logger habilitados.
+- `test`: Swagger, mocks y diagnóstico habilitados para pruebas.
+- `production`: mocks y diagnóstico del logger deshabilitados. Swagger también queda deshabilitado por defecto; puede habilitarse con `ENABLE_SWAGGER=true` si el despliegue lo requiere.
+
+El health check informa estado, entorno, uptime y timestamp, sin exponer URI de base de datos ni secretos.
 
 ## Testing
 
-Herramientas: Mocha, Chai y Supertest. Los tests usan `mongodb-memory-server`, por lo que no necesitan conectarse a tu base de desarrollo. La primera ejecución puede descargar el binario de MongoDB si todavía no está disponible localmente.
+Los tests usan Mocha, Chai, Supertest y mongodb-memory-server:
 
 ```bash
 npm test
 ```
 
-La suite crea y limpia sus propios datos antes de cada caso. Cubre usuarios, productos, pedidos, estados inválidos, mocks, seed, logger, Swagger, entregas y rutas inexistentes.
+La primera ejecución puede descargar el binario de MongoDB para pruebas.
 
-## Seguridad y repositorio
+## Docker
 
-- No subir `.env`, `node_modules/`, `logs/` ni `uploads/`.
-- No usar datos reales en los tests.
-- Para producción, agregar autenticación/autorización, hash de contraseñas, rate limiting y almacenamiento de archivos externo (por ejemplo, S3). Este proyecto es una base académica y no implementa autenticación.
+Crear una copia local de las variables:
+
+```bash
+cp .env.example .env
+```
+
+Levantar API y MongoDB:
+
+```bash
+docker compose up --build -d
+```
+
+La API queda en http://localhost:3000. Verificar:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/users?page=1&limit=10
+```
+
+Swagger está deshabilitado en el contenedor por defecto. Para habilitarlo, definir `ENABLE_SWAGGER=true` en el archivo `.env` y recrear el servicio:
+
+```bash
+docker compose up -d --force-recreate
+```
+
+Ver logs y detener:
+
+```bash
+docker compose logs -f api
+docker compose down
+```
+
+Docker Compose crea volúmenes para MongoDB, archivos subidos y logs. `docker compose down` conserva los volúmenes; `docker compose down -v` los elimina junto con los datos.
+
+Para construir la imagen manualmente:
+
+```bash
+docker build -t shipnow-api .
+docker run --rm -p 3000:3000 --env-file .env -e MONGODB_URI=mongodb://host.docker.internal:27017/shipnow shipnow-api
+```
+
+En Linux, para conectar ese contenedor a MongoDB del host, configurar una red/host gateway apropiada; la opción recomendada para esta entrega es Docker Compose.
+
+## Archivos excluidos del repositorio
+
+`.env`, `node_modules/`, `.git/`, `logs/`, `uploads/`, `coverage/` y archivos temporales. `.dockerignore` aplica exclusiones equivalentes al contexto de construcción.
+
+## Arquitectura
+
+```text
+src/
+  config/         entorno, Winston, Swagger y Multer
+  constants/      roles, estados y tipos de documentos
+  controllers/    entrada HTTP
+  middlewares/    404 y errores globales
+  models/         esquemas Mongoose
+  repositories/   consultas y persistencia
+  routes/         rutas Express
+  services/       reglas de negocio
+  utils/          errores, asyncHandler y paginación
+  app.js          configuración Express
+  server.js       conexión MongoDB y servidor
+tests/            pruebas funcionales
+```
+
+## Seguridad y alcance
+
+No se implementa autenticación ni autorización. Antes de usar con datos reales, agregar autenticación, hash de contraseñas, rate limiting, validación de contenido real de archivos, almacenamiento externo y políticas de retención. No subir `.env`, datos personales, archivos cargados ni logs al repositorio.

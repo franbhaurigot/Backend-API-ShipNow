@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import repo from '../repositories/Delivery.repository.js';
 import { HttpError } from '../utils/HttpError.js';
 import { ROLES, DELIVERY_STATUS } from '../constants/index.js';
@@ -11,8 +12,14 @@ class DeliveryService {
       if (!Object.values(DELIVERY_STATUS).includes(query.status)) throw new HttpError(400, 'INVALID_DELIVERY_FILTER', 'status no es válido.');
       filters.status = query.status;
     }
-    if (query.courier) filters.courier = query.courier;
-    if (query.order) filters.order = query.order;
+    if (query.courier) {
+      if (!mongoose.isValidObjectId(query.courier)) throw new HttpError(400, 'INVALID_DELIVERY_FILTER', 'courier debe ser un ID válido.');
+      filters.courier = query.courier;
+    }
+    if (query.order) {
+      if (!mongoose.isValidObjectId(query.order)) throw new HttpError(400, 'INVALID_DELIVERY_FILTER', 'order debe ser un ID válido.');
+      filters.order = query.order;
+    }
     const [data, total] = await Promise.all([repo.findAll({ skip, limit, filters }), repo.countAll(filters)]);
     return { data, pagination: buildPagination(page, limit, total) };
   }

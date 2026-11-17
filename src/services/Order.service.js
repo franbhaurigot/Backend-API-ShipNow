@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import repo from '../repositories/Order.repository.js';
 import userRepo from '../repositories/User.repository.js';
 import productRepo from '../repositories/Product.repository.js';
@@ -18,7 +19,10 @@ class OrderService {
       if (!Object.values(ORDER_PRIORITY).includes(query.priority)) throw new HttpError(400, 'INVALID_ORDER_FILTER', 'priority no es válida.');
       filters.priority = query.priority;
     }
-    if (query.user) filters.user = query.user;
+    if (query.user) {
+      if (!mongoose.isValidObjectId(query.user)) throw new HttpError(400, 'INVALID_ORDER_FILTER', 'user debe ser un ID válido.');
+      filters.user = query.user;
+    }
     const [data, total] = await Promise.all([repo.findAll({ skip, limit, filters }), repo.countAll(filters)]);
     return { data, pagination: buildPagination(page, limit, total) };
   }

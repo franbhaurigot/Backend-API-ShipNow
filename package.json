@@ -1,7 +1,7 @@
 {
   "name": "shipnow-api",
   "version": "1.0.0",
-  "description": "ShipNow API - proyecto integrador módulos 1 a 7",
+  "description": "API de gestión de pedidos y entregas",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

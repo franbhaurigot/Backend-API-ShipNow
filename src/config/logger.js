@@ -22,18 +22,15 @@ const lineFormat = winston.format.combine(
 
 const transports = [
   new winston.transports.Console({
-    level: config.nodeEnv === 'production' ? 'info' : config.logLevel,
-    format: winston.format.combine(
-      winston.format.colorize(),
-      lineFormat
-    )
+    level: config.logLevel,
+    format: winston.format.combine(winston.format.colorize(), lineFormat)
   }),
   new DailyRotateFile({
     filename: path.join(logsDir, 'application-%DATE%.log'),
     datePattern: 'YYYY-MM-DD',
     maxFiles: '14d',
     maxSize: '10m',
-    level: 'debug',
+    level: config.logLevel,
     format: lineFormat
   }),
   new DailyRotateFile({
@@ -48,7 +45,7 @@ const transports = [
 
 const logger = winston.createLogger({
   levels: customLevels.levels,
-  level: 'debug',
+  level: config.logLevel,
   transports,
   exitOnError: false
 });

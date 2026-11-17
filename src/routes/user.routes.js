@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { getUsers, getUser, createUser, uploadUserDocument } from '../controllers/User.controller.js';
+import { createUpload } from '../config/upload.js';
+const router = Router();
+const upload = createUpload('user-documents');
+router.get('/', getUsers);
+router.get('/:id', getUser);
+router.post('/', createUser);
+router.post('/:id/documents', upload.single('file'), uploadUserDocument);
+export default router;

@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { getDeliveries, getDelivery, createDelivery, uploadDeliveryProof } from '../controllers/Delivery.controller.js';
+import { createUpload } from '../config/upload.js';
+const router = Router();
+const upload = createUpload('delivery-proofs');
+router.get('/', getDeliveries);
+router.get('/:id', getDelivery);
+router.post('/', createDelivery);
+router.post('/:id/proof', upload.single('file'), uploadDeliveryProof);
+export default router;

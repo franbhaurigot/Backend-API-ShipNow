@@ -16,7 +16,7 @@ const options = {
     paths: {
       '/health': { get: { summary: 'Estado del servicio', responses: { '200': { description: 'Servicio disponible' } } } },
       '/api/users': {
-        get: { tags: ['Users'], summary: 'Listar usuarios', responses: { '200': { description: 'Listado de usuarios' } } },
+        get: { tags: ['Users'], summary: 'Listar usuarios', parameters: [{ in: 'query', name: 'page', schema: { type: 'integer', minimum: 1, default: 1 } }, { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 } }], responses: { '200': { description: 'Listado de usuarios' } } },
         post: { tags: ['Users'], summary: 'Crear usuario', requestBody: { required: true, content: { 'application/json': { schema: { '$ref': '#/components/schemas/User' } } } }, responses: { '201': { description: 'Usuario creado' }, '400': { description: 'Datos inválidos' } } }
       },
       '/api/users/{id}': { get: { tags: ['Users'], summary: 'Consultar usuario', parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Usuario' }, '404': { description: 'No encontrado' } } } },
@@ -26,13 +26,13 @@ const options = {
         post: { tags: ['Products'], summary: 'Crear producto', requestBody: { required: true, content: { 'application/json': { schema: { '$ref': '#/components/schemas/Product' } } } }, responses: { '201': { description: 'Creado' }, '400': { description: 'Datos inválidos' } } }
       },
       '/api/orders': {
-        get: { tags: ['Orders'], summary: 'Listar pedidos', responses: { '200': { description: 'Listado' } } },
+        get: { tags: ['Orders'], summary: 'Listar pedidos', parameters: [{ in: 'query', name: 'page', schema: { type: 'integer', minimum: 1, default: 1 } }, { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 } }], responses: { '200': { description: 'Listado' } } },
         post: { tags: ['Orders'], summary: 'Crear pedido', requestBody: { required: true, content: { 'application/json': { schema: { '$ref': '#/components/schemas/Order' } } } }, responses: { '201': { description: 'Pedido creado' }, '400': { description: 'Datos inválidos' }, '404': { description: 'Usuario o producto inexistente' } } }
       },
       '/api/orders/{id}': { get: { tags: ['Orders'], summary: 'Consultar pedido', parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Pedido' }, '404': { description: 'No encontrado' } } } },
       '/api/orders/{id}/status': { patch: { tags: ['Orders'], summary: 'Actualizar estado del pedido', parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['status'], properties: { status: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'] } } } } } }, responses: { '200': { description: 'Estado actualizado' }, '400': { description: 'Estado inválido' }, '404': { description: 'Pedido no encontrado' } } } },
       '/api/deliveries': {
-        get: { tags: ['Deliveries'], summary: 'Listar entregas', responses: { '200': { description: 'Listado' } } },
+        get: { tags: ['Deliveries'], summary: 'Listar entregas', parameters: [{ in: 'query', name: 'page', schema: { type: 'integer', minimum: 1, default: 1 } }, { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 } }], responses: { '200': { description: 'Listado' } } },
         post: { tags: ['Deliveries'], summary: 'Crear entrega', requestBody: { required: true, content: { 'application/json': { schema: { '$ref': '#/components/schemas/Delivery' } } } }, responses: { '201': { description: 'Creada' }, '404': { description: 'Pedido no encontrado' } } }
       },
       '/api/deliveries/{id}': { get: { tags: ['Deliveries'], summary: 'Consultar entrega', parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Entrega' }, '404': { description: 'No encontrada' } } } },

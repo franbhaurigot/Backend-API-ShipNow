@@ -2,9 +2,10 @@ import repo from '../repositories/Delivery.repository.js';
 
 import { HttpError } from '../utils/HttpError.js';
 import { ROLES, DELIVERY_STATUS } from '../constants/index.js';
+import { getPagination, buildPagination } from '../utils/pagination.js';
 
 class DeliveryService {
-  getAll() { return repo.findAll(); }
+  async getAll(query) { const { page, limit, skip } = getPagination(query); const [data, total] = await Promise.all([repo.findAll({ skip, limit }), repo.countAll()]); return { data, pagination: buildPagination(page, limit, total) }; }
   async getById(id) { const delivery = await repo.findById(id); if (!delivery) throw new HttpError(404, 'DELIVERY_NOT_FOUND', 'Entrega no encontrada.'); return delivery; }
   async create(data) {
     if (!data.order) throw new HttpError(400, 'INVALID_DELIVERY', 'order es obligatorio.');

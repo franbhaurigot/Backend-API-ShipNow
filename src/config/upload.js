@@ -10,7 +10,8 @@ const allowedTypes = new Map([
 const maxFileSize = 5 * 1024 * 1024;
 
 export function createUpload(destination) {
-  const absoluteDestination = path.resolve('uploads', destination);
+  const uploadRoot = process.env.UPLOAD_DIR || path.resolve(process.cwd(), '..', 'shipnow-uploads');
+  const absoluteDestination = path.resolve(uploadRoot, destination);
   fs.mkdirSync(absoluteDestination, { recursive: true });
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, absoluteDestination),

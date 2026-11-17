@@ -4,9 +4,10 @@ import productRepo from '../repositories/Product.repository.js';
 import { HttpError } from '../utils/HttpError.js';
 import { ORDER_STATUS, ORDER_PRIORITY } from '../constants/index.js';
 import logger from '../config/logger.js';
+import { getPagination, buildPagination } from '../utils/pagination.js';
 
 class OrderService {
-  getAll() { return repo.findAll(); }
+  async getAll(query) { const { page, limit, skip } = getPagination(query); const [data, total] = await Promise.all([repo.findAll({ skip, limit }), repo.countAll()]); return { data, pagination: buildPagination(page, limit, total) }; }
   async getById(id) { const order = await repo.findById(id); if (!order) throw new HttpError(404, 'ORDER_NOT_FOUND', 'Pedido no encontrado.'); return order; }
   async create(data) {
     if (!data.user || !Array.isArray(data.items) || !data.items.length || !data.destination) throw new HttpError(400, 'INVALID_ORDER', 'user, items (no vacío) y destination son obligatorios.');

@@ -1,149 +1,144 @@
-# ShipNow API — Proyecto integrador (Módulos 1 a 8)
+# ShipNow API
 
-API REST de gestión logística desarrollada con Node.js 20+, Express y MongoDB. Incluye arquitectura por capas, validaciones, paginación, carga controlada de archivos, logging, Swagger, pruebas funcionales y despliegue con Docker.
+API para administrar usuarios, productos, pedidos y entregas. Está desarrollada con Node.js, Express y MongoDB. El proyecto está organizado en rutas, controladores, servicios y repositorios.
 
 ## Requisitos
 
-- Node.js 20 o superior y npm
-- MongoDB local/Atlas (para ejecución local)
-- Docker y Docker Compose (para contenedores)
+- Node.js 20 o superior
+- npm
+- MongoDB (si se ejecuta sin Docker)
+- Docker Desktop (para usar Docker Compose)
 
-## Configuración local
+## Ejecutar localmente
+
+Instalá las dependencias y creá tu archivo de configuración:
 
 ```bash
 npm install
 cp .env.example .env
 ```
 
-Configurar las variables en `.env`:
+En Windows podés copiar el archivo desde el Explorador y renombrarlo a `.env`.
 
-| Variable | Uso | Ejemplo |
-|---|---|---|
-| PORT | Puerto HTTP | 3000 |
-| MONGODB_URI | Conexión MongoDB | mongodb://127.0.0.1:27017/shipnow |
-| NODE_ENV | Entorno (development, test, production) | development |
-| LOG_LEVEL | Nivel mínimo de consola | debug |
-| ENABLE_SWAGGER | Habilitar Swagger explícitamente en producción | false |
-
-No guardar secretos ni credenciales reales en `.env.example`. La aplicación valida las variables obligatorias y sus valores al iniciar. No utiliza JWT ni URLs de servicios externos porque este proyecto todavía no integra autenticación ni servicios de terceros.
-
-Iniciar en desarrollo:
+Revisá que `MONGODB_URI` apunte a tu MongoDB. Después iniciá la API:
 
 ```bash
 npm run dev
 ```
 
-O iniciar normalmente:
+También está disponible `npm start`, que inicia el servidor sin nodemon.
 
-```bash
-npm start
-```
+La API queda en `http://localhost:3000`. El estado se consulta en `/health` y Swagger en `/api/docs` mientras el entorno no sea producción.
 
-API: http://localhost:3000  
-Health check: http://localhost:3000/health  
-Swagger: http://localhost:3000/api/docs (habilitado automáticamente fuera de producción).
+## Variables de entorno
+
+| Variable | Uso |
+|---|---|
+| `PORT` | Puerto del servidor |
+| `MONGODB_URI` | Conexión a MongoDB |
+| `NODE_ENV` | development, test o production |
+| `LOG_LEVEL` | Nivel de detalle de los logs |
+| `ENABLE_SWAGGER` | Habilita Swagger en producción si vale true |
+
+La aplicación revisa las variables necesarias al arrancar. Si falta alguna o tiene un valor inválido, muestra el error y no inicia. Los valores de ejemplo están en `.env.example`; las credenciales locales van en `.env`, que no se debe subir al repositorio.
+
+No hay variables de JWT ni de servicios externos porque esta versión todavía no implementa autenticación ni integra servicios de terceros.
 
 ## Paginación
 
-Los listados de usuarios, pedidos y entregas están paginados. Parámetros:
-- `page`: página desde 1 (predeterminado: 1).
-- `limit`: elementos por página (predeterminado: 10; máximo: 100).
+Los listados de usuarios, pedidos y entregas aceptan:
 
-Ejemplo: `GET /api/orders?page=2&limit=20`.
+- `page`: página a consultar (empieza en 1).
+- `limit`: cantidad de resultados (por defecto 10, máximo 100).
 
-La respuesta incluye `data` y `pagination` con página, límite, total, páginas y banderas de navegación. Valores inválidos devuelven HTTP 400.
+Ejemplo:
 
-## Carga de archivos
+```http
+GET /api/orders?page=2&limit=20
+```
 
-Multer acepta PDF, PNG y JPG/JPEG con máximo de 5 MB y extensión coherente con el MIME declarado. Por defecto, los archivos se guardan en `../shipnow-uploads/`, fuera del directorio del proyecto; se puede cambiar con `UPLOAD_DIR`. En Docker, `UPLOAD_DIR=/app/uploads` apunta a un volumen persistente separado. MongoDB almacena metadatos. Los errores de tipo y tamaño se devuelven de forma controlada.
+La respuesta incluye los resultados y un objeto `pagination` con el total de registros y las páginas disponibles. Si los valores no son válidos, la API responde con HTTP 400.
 
-La carpeta de archivos no forma parte del repositorio. Política de retención propuesta para esta entrega: documentos de usuario hasta 365 días desde su carga y comprobantes hasta 90 días después de que la entrega figure como entregada; luego deben eliminarse mediante una tarea operativa de limpieza. Esta limpieza no está automatizada en el proyecto. En Docker se monta un volumen separado. Para un entorno real, definir backups y/o migrar a almacenamiento de objetos (S3 u otro). El volumen no reemplaza una política de retención.
+## Archivos
 
-## Entornos y endpoints internos
+Los documentos de usuarios y los comprobantes de entrega se reciben con Multer. Se permiten PDF, PNG y JPG/JPEG, con un tamaño máximo de 5 MB.
 
-- `development`: Swagger, mocks y endpoint de diagnóstico del logger habilitados.
-- `test`: Swagger, mocks y diagnóstico habilitados para pruebas.
-- `production`: mocks y diagnóstico del logger deshabilitados. Swagger también queda deshabilitado por defecto; puede habilitarse con `ENABLE_SWAGGER=true` si el despliegue lo requiere.
+Por defecto, los archivos se guardan fuera de la carpeta del proyecto, en `../shipnow-uploads/`. La ubicación se puede cambiar con `UPLOAD_DIR`. En Docker se usa el volumen `uploads_data`. MongoDB guarda los metadatos del archivo.
 
-El health check informa estado, entorno, uptime y timestamp, sin exponer URI de base de datos ni secretos.
+Para esta entrega se propone conservar los documentos de usuario hasta 365 días desde la carga y los comprobantes hasta 90 días después de que la entrega figure como entregada. La eliminación debe realizarse mediante una tarea de mantenimiento: todavía no está automatizada. En un entorno real también habría que definir backups y evaluar almacenamiento externo.
 
-## Testing
+## Producción
 
-Los tests usan Mocha, Chai, Supertest y mongodb-memory-server:
+Con `NODE_ENV=production` no se registran las rutas de mocks ni la ruta de prueba del logger. Swagger también queda deshabilitado, salvo que se configure `ENABLE_SWAGGER=true`.
+
+El endpoint `/health` informa el estado de la API, el entorno, el tiempo activo y la fecha de consulta. No expone credenciales ni la URI de MongoDB.
+
+## Tests
+
+Ejecutá las pruebas con:
 
 ```bash
 npm test
 ```
 
-La primera ejecución puede descargar el binario de MongoDB para pruebas.
+Se usan Mocha, Chai y Supertest. Para la base de datos de pruebas se utiliza mongodb-memory-server; la primera ejecución puede descargar el binario de MongoDB.
 
 ## Docker
 
-Crear una copia local de las variables:
-
-```bash
-cp .env.example .env
-```
-
-Levantar API y MongoDB:
+Con Docker Desktop abierto y el archivo `.env` creado, ejecutá:
 
 ```bash
 docker compose up --build -d
 ```
 
-La API queda en http://localhost:3000. Verificar:
+Docker Compose inicia la API y MongoDB. La API queda disponible en el puerto 3000 (o en el puerto definido en `PORT`).
+
+Para comprobar que está respondiendo:
 
 ```bash
 curl http://localhost:3000/health
-curl http://localhost:3000/api/users?page=1&limit=10
+curl "http://localhost:3000/api/users?page=1&limit=10"
 ```
 
-Swagger está deshabilitado en el contenedor por defecto. Para habilitarlo, definir `ENABLE_SWAGGER=true` en el archivo `.env` y recrear el servicio:
-
-```bash
-docker compose up -d --force-recreate
-```
-
-Ver logs y detener:
+Para ver los logs:
 
 ```bash
 docker compose logs -f api
+```
+
+Para detener los servicios:
+
+```bash
 docker compose down
 ```
 
-Docker Compose crea volúmenes para MongoDB, archivos subidos y logs. `docker compose down` conserva los volúmenes; `docker compose down -v` los elimina junto con los datos.
+MongoDB, los archivos subidos y los logs se guardan en volúmenes. Por eso `docker compose down` no borra esos datos. Si también querés eliminar los volúmenes, usá `docker compose down -v`.
 
-Para construir la imagen manualmente:
+También se puede construir y ejecutar solo la imagen de la API:
 
 ```bash
 docker build -t shipnow-api .
 docker run --rm -p 3000:3000 --env-file .env -e MONGODB_URI=mongodb://host.docker.internal:27017/shipnow shipnow-api
 ```
 
-En Linux, para conectar ese contenedor a MongoDB del host, configurar una red/host gateway apropiada; la opción recomendada para esta entrega es Docker Compose.
+Para esta entrega conviene usar Docker Compose, porque también configura MongoDB.
 
-## Archivos excluidos del repositorio
+## Archivos que quedan fuera de Git
 
-`.env`, `node_modules/`, `.git/`, `logs/`, `uploads/`, `coverage/` y archivos temporales. `.dockerignore` aplica exclusiones equivalentes al contexto de construcción.
+El repositorio ignora `.env`, `node_modules/`, `logs/`, `uploads/` y `coverage/`. Docker aplica exclusiones similares mediante `.dockerignore`.
 
-## Arquitectura
+## Organización del proyecto
 
-```text
-src/
-  config/         entorno, Winston, Swagger y Multer
-  constants/      roles, estados y tipos de documentos
-  controllers/    entrada HTTP
-  middlewares/    404 y errores globales
-  models/         esquemas Mongoose
-  repositories/   consultas y persistencia
-  routes/         rutas Express
-  services/       reglas de negocio
-  utils/          errores, asyncHandler y paginación
-  app.js          configuración Express
-  server.js       conexión MongoDB y servidor
-tests/            pruebas funcionales
-```
+- `src/config`: configuración, Swagger, Multer y logging.
+- `src/controllers`: manejo de las solicitudes HTTP.
+- `src/services`: lógica de la aplicación.
+- `src/repositories`: consultas a MongoDB.
+- `src/models`: modelos de Mongoose.
+- `src/routes`: definición de endpoints.
+- `src/middlewares`: manejo de errores y rutas inexistentes.
+- `src/utils`: funciones auxiliares.
+- `tests`: pruebas.
 
-## Seguridad y alcance
+## Alcance
 
-No se implementa autenticación ni autorización. Antes de usar con datos reales, agregar autenticación, hash de contraseñas, rate limiting, validación de contenido real de archivos, almacenamiento externo y políticas de retención. No subir `.env`, datos personales, archivos cargados ni logs al repositorio.
+Esta versión no tiene autenticación ni autorización, por lo que no debería usarse con información sensible o datos reales. Antes de llevarla a un entorno real habría que agregar esas funciones, proteger las contraseñas, verificar el contenido real de los archivos y automatizar la política de retención.

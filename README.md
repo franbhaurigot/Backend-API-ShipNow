@@ -55,9 +55,9 @@ La respuesta incluye `data` y `pagination` con página, límite, total, páginas
 
 ## Carga de archivos
 
-Multer acepta PDF, PNG y JPG/JPEG con máximo de 5 MB y extensión coherente con el MIME declarado. Los archivos se guardan en `uploads/`; MongoDB almacena metadatos. Los errores de tipo y tamaño se devuelven de forma controlada.
+Multer acepta PDF, PNG y JPG/JPEG con máximo de 5 MB y extensión coherente con el MIME declarado. Por defecto, los archivos se guardan en `../shipnow-uploads/`, fuera del directorio del proyecto; se puede cambiar con `UPLOAD_DIR`. En Docker, `UPLOAD_DIR=/app/uploads` apunta a un volumen persistente separado. MongoDB almacena metadatos. Los errores de tipo y tamaño se devuelven de forma controlada.
 
-La carpeta de archivos no forma parte del repositorio. En Docker se monta en un volumen separado. Para un entorno real, definir retención y eliminación periódica de archivos, backups y/o migrar a almacenamiento de objetos (S3 u otro). El volumen no reemplaza una política de retención.
+La carpeta de archivos no forma parte del repositorio. Política de retención propuesta para esta entrega: documentos de usuario hasta 365 días desde su carga y comprobantes hasta 90 días después de que la entrega figure como entregada; luego deben eliminarse mediante una tarea operativa de limpieza. Esta limpieza no está automatizada en el proyecto. En Docker se monta un volumen separado. Para un entorno real, definir backups y/o migrar a almacenamiento de objetos (S3 u otro). El volumen no reemplaza una política de retención.
 
 ## Entornos y endpoints internos
 

@@ -1,9 +1,10 @@
 import repo from '../repositories/User.repository.js';
 import { HttpError } from '../utils/HttpError.js';
 import { ROLES, DOCUMENT_TYPES } from '../constants/index.js';
+import { getPagination, buildPagination } from '../utils/pagination.js';
 
 class UserService {
-  getAll() { return repo.findAll(); }
+  async getAll(query) { const { page, limit, skip } = getPagination(query); const [data, total] = await Promise.all([repo.findAll({ skip, limit }), repo.countAll()]); return { data, pagination: buildPagination(page, limit, total) }; }
   async getById(id) { const user = await repo.findById(id); if (!user) throw new HttpError(404, 'USER_NOT_FOUND', 'Usuario no encontrado.'); return user; }
   async create(data) {
     if (!data.name || !data.email || !data.password) throw new HttpError(400, 'INVALID_USER', 'name, email y password son obligatorios.');
